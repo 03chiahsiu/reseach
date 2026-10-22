@@ -100,6 +100,17 @@ textarea{width:100%;font:13px/1.5 ui-monospace,Consolas,monospace;border:1px sol
     </tr></thead><tbody id="rows"></tbody></table></div>
     <p class="note" style="margin-top:10px">問卷作答內容在各 Google 表單的回應中，以「受試者編號」欄位與本表的 ID 對應。</p>
   </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h2 style="margin:0">活動紀錄</h2>
+      <span class="note">最新 200 筆</span>
+    </div>
+    <div class="wrap"><table><thead><tr>
+      <th>時間</th><th>身分</th><th>活動</th><th>受試者 ID</th><th>詳細資訊</th>
+    </tr></thead><tbody id="activityRows"></tbody></table></div>
+    <p class="note" style="margin-top:10px">活動紀錄由資料庫函式寫入，填答者無法查看或修改。</p>
+  </section>
 </div>
 
 </main>
@@ -115,7 +126,13 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const sb = (window.supabase && APP.SUPABASE_URL && !APP.SUPABASE_URL.includes('YOUR-'))
   ? window.supabase.createClient(APP.SUPABASE_URL, APP.SUPABASE_ANON_KEY, { auth:{ storageKey:'exp-admin-auth' } }) : null;
 const STEP = {login:'登入',intro:'說明頁',product:'商品頁',tryon:'AI 試衣',shipping:'配送中',arrival:'到貨',form_post:'問卷①',return_steps:'退貨流程',form_effort:'問卷②',decision:'退貨決策',form_final:'問卷③',done:'完成'};
-let ROWS = [];
+const EVENT = {participant_claimed:'受試者首次登入',participant_resumed:'受試者繼續作答',step_changed:'受試者更新進度',participant_completed:'受試者完成',researcher_login:'研究者登入',researcher_logout:'研究者登出',ids_created:'產生參與者 ID',id_deleted:'刪除參與者 ID',participants_csv_exported:'匯出受試者 CSV'};
+let ROWS = [], ACTIVITY = [];
+
+async function logResearcher(eventType, details={}){
+  const { error } = await sb.rpc('log_researcher_event', { p_event_type:eventType, p_details:details });
+  if(error) console.warn('研究者活動紀錄失敗', error.message);
+}
 
 function showLogin(msg){ $('#loading').hidden=true; $('#dash').hidden=true; $('#loginCard').hidden=false; $('#who').textContent=''; $('#lerr').textContent=msg||''; }
 
@@ -141,10 +158,10 @@ $('#lbtn').onclick = async () => {
   const { error } = await sb.auth.signInWithPassword({ email:$('#em').value.trim(), password:$('#pw').value });
   $('#lbtn').disabled=false;
   if(error){ $('#lerr').textContent='Email 或密碼錯誤。'; return; }
-  $('#pw').value=''; enter();
+  $('#pw').value=''; await logResearcher('researcher_login', { source:'admin' }); enter();
 };
 $('#pw').onkeydown = e => { if(e.key==='Enter') $('#lbtn').click(); };
-$('#logout').onclick = async () => { await sb.auth.signOut(); showLogin(); };
+$('#logout').onclick = async () => { await logResearcher('researcher_logout', { source:'admin' }); await sb.auth.signOut(); showLogin(); };
 $('#refresh').onclick = load;
 
 async function fetchAll(){
@@ -160,11 +177,23 @@ async function fetchAll(){
   }
   return all;
 }
+async function fetchActivity(){
+  const { data, error } = await sb.from('activity_logs')
+    .select('id,actor_role,event_type,participant_pid,details,created_at')
+    .order('created_at',{ascending:false}).range(0,199);
+  if(error) throw error;
+  return data || [];
+}
 const status = r => r.completed_at ? '已完成' : (r.claimed_at ? '進行中' : '未使用');
 const fmt = t => t ? new Date(t).toLocaleString('zh-TW',{hour12:false}) : '';
+const detail = d => {
+  if(!d || !Object.keys(d).length) return '';
+  const names={count:'數量',prefix:'前綴',group:'組別',previous_step:'前一步',step:'進度',dwell_arrival:'到貨頁秒數',dwell_decision:'決策頁秒數',row_count:'資料筆數',source:'來源'};
+  return Object.entries(d).filter(([,v])=>v!==null).map(([k,v])=>`${names[k]||k}: ${STEP[v]||v}`).join('；');
+};
 
 async function load(){
-  try{ ROWS = await fetchAll(); }catch(e){ alert('讀取失敗：' + e.message); return; }
+  try{ [ROWS, ACTIVITY] = await Promise.all([fetchAll(), fetchActivity()]); }catch(e){ alert('讀取失敗：' + e.message); return; }
   const used = ROWS.filter(r=>r.claimed_at), done = ROWS.filter(r=>r.completed_at);
   const g = k => `${used.filter(r=>r.grp===k).length} 登入／${done.filter(r=>r.grp===k).length} 完成`;
   const stat = (t,v) => `<div class="stat">${t}<b>${v}</b></div>`;
@@ -177,9 +206,13 @@ async function load(){
       <td>${fmt(r.claimed_at)}</td><td>${fmt(r.completed_at)}</td>
       <td>${s==='未使用'?`<button class="btn danger sm" data-del="${esc(r.pid)}">刪除</button>`:''}</td></tr>`;
   }).join('') || '<tr><td colspan="9" style="color:var(--muted)">還沒有任何 ID，請先在上方產生。</td></tr>';
+  $('#activityRows').innerHTML = ACTIVITY.map(r => `<tr>
+    <td>${fmt(r.created_at)}</td><td>${r.actor_role==='researcher'?'研究者':'受試者'}</td>
+    <td>${esc(EVENT[r.event_type]||r.event_type)}</td><td>${esc(r.participant_pid||'')}</td><td>${esc(detail(r.details))}</td>
+  </tr>`).join('') || '<tr><td colspan="5" style="color:var(--muted)">尚無活動紀錄。</td></tr>';
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
     if(!confirm('確定刪除 ID ' + b.dataset.del + '？')) return;
-    const { error } = await sb.from('participants').delete().eq('pid', b.dataset.del);
+    const { error } = await sb.rpc('delete_unclaimed_participant', { p_pid:b.dataset.del });
     if(error) alert('刪除失敗：' + error.message); else load();
   });
 }
@@ -193,7 +226,8 @@ $('#gen').onclick = async () => {
 };
 $('#copy').onclick = async () => { try{ await navigator.clipboard.writeText($('#genTxt').value); $('#copy').textContent='已複製'; }catch(e){ $('#genTxt').select(); } };
 
-$('#csv').onclick = () => {
+$('#csv').onclick = async () => {
+  await logResearcher('participants_csv_exported', { row_count:ROWS.length });
   const head = ['pid','group','gap','nudge','status','step','dwell_arrival_sec','dwell_decision_sec','claimed_at','completed_at'];
   const q = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
   const lines = [head.join(',')].concat(ROWS.map(r => [r.pid,r.grp,r.gap,r.nudge,status(r),r.step,r.dwell_arrival,r.dwell_decision,r.claimed_at,r.completed_at].map(q).join(',')));
