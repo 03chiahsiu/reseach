@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>研究者後台｜實驗平台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--fog:#E8EDEF;--paper:#fff;--ink:#16252D;--muted:#5B6B73;--line:#D3DCE0;--teal:#1E5B66;--teal-d:#154650;--red:#B23B2A;--note:#EEF3F5;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--fog);color:var(--ink);line-height:1.65}
+header{background:var(--ink);color:#fff}
+.in{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header b{letter-spacing:.14em}
+header span{font-size:13px;color:#B9C8CF}
+main{max-width:1100px;margin:0 auto;padding:22px 20px 80px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:22px;margin-bottom:18px}
+h1,h2{margin:0 0 10px}h1{font-size:22px}h2{font-size:18px}
+.lead{color:var(--muted);margin:0 0 12px}
+label{display:block;font-weight:500;margin-top:12px;font-size:14px}
+input{font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:4px;width:100%;margin-top:4px}
+.btn{font:inherit;font-weight:500;background:var(--teal);color:#fff;border:0;border-radius:4px;padding:9px 18px;cursor:pointer;min-height:40px}
+.btn:hover:not(:disabled){background:var(--teal-d)}
+.btn:disabled{background:#A9B8BD;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--teal);border:1px solid var(--teal)}
+.btn.ghost:hover{background:var(--note)}
+.btn.sm{padding:3px 10px;min-height:0;font-size:13px}
+.btn.danger{background:#fff;color:var(--red);border:1px solid var(--red)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #7FB4C0;outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>div{flex:0 0 140px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--note);border-radius:4px;padding:12px 14px;font-size:13px;color:var(--muted)}
+.stat b{display:block;font-size:24px;color:var(--ink);line-height:1.2}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px}
+table{border-collapse:collapse;width:100%;font-size:14px;white-space:nowrap}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left}
+th{background:var(--note);position:sticky;top:0;font-weight:500}
+.tag{display:inline-block;padding:0 8px;border-radius:3px;font-size:12px;background:var(--note)}
+.tag.done{background:#DDEEDF;color:#245B36}.tag.run{background:#FFF1D6;color:#7A5200}
+.err{color:var(--red);min-height:1.5em;margin:8px 0 0}
+textarea{width:100%;font:13px/1.5 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:4px;padding:8px;height:140px;margin-top:8px}
+.note{font-size:13px;color:var(--muted)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="in"><b id="bn">研究者後台</b><span id="who"></span></div></header>
+<main>
+
+<p id="loading" class="lead" style="text-align:center;margin-top:70px">載入中…</p>
+<section class="card" id="loginCard" style="max-width:440px;margin:40px auto" hidden>
+  <h1>研究者登入</h1>
+  <p class="lead">此頁僅限研究者使用。填答者請從實驗網址（index.html）以參與者 ID 登入。</p>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+  <label for="pw">密碼</label><input id="pw" type="password" autocomplete="current-password">
+  <p class="err" id="lerr" role="alert"></p>
+  <button class="btn" id="lbtn">登入</button>
+</section>
+
+<div id="dash" hidden>
+  <section class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2 style="margin:0">受試者概況</h2>
+      <div class="row" style="gap:8px">
+        <button class="btn ghost sm" id="refresh">重新整理</button>
+        <a class="btn ghost sm" style="text-decoration:none;display:inline-block" href="index.html?admin=1&group=A" target="_blank" rel="noopener">預覽平台（不寫入資料）</a>
+        <button class="btn danger sm" id="logout">登出</button>
+      </div>
+    </div>
+    <div class="grid" id="stats" style="margin-top:14px"></div>
+    <p class="note" style="margin:12px 0 0">組別：A＝低落差／無輕推　B＝低落差／有輕推　C＝高落差／無輕推　D＝高落差／有輕推。組別在受試者首次登入時由資料庫自動平衡分派。</p>
+  </section>
+
+  <section class="card">
+    <h2>產生參與者 ID</h2>
+    <p class="lead">每個 ID 對應一位受試者、一筆紀錄。產生後把 ID 分別發給受試者即可。</p>
+    <div class="row">
+      <div><label for="n">數量</label><input id="n" type="number" min="1" max="1000" value="20"></div>
+      <div><label for="pre">前綴</label><input id="pre" value="P" maxlength="6"></div>
+      <button class="btn" id="gen">產生</button>
+    </div>
+    <p class="err" id="gerr" role="alert"></p>
+    <div id="genOut" hidden>
+      <textarea id="genTxt" readonly aria-label="新產生的 ID"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn ghost sm" id="copy">複製全部</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h2 style="margin:0">所有紀錄</h2>
+      <button class="btn sm" id="csv">匯出 CSV</button>
+    </div>
+    <div class="wrap"><table><thead><tr>
+      <th>ID</th><th>組別</th><th>狀態</th><th>目前進度</th><th>到貨頁秒數</th><th>決策頁秒數</th><th>首次登入</th><th>完成時間</th><th></th>
+    </tr></thead><tbody id="rows"></tbody></table></div>
+    <p class="note" style="margin-top:10px">問卷作答內容在各 Google 表單的回應中，以「受試者編號」欄位與本表的 ID 對應。</p>
+  </section>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="demo-backend.js"></script>
+<script>
+const APP = window.APP_CONFIG || {};
+const $ = s => document.querySelector(s);
+if(APP.BRAND_ZH){ $('#bn').textContent = APP.BRAND_ZH + '｜研究者後台'; document.title = '研究者後台｜' + APP.BRAND_ZH; }
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sb = (window.supabase && APP.SUPABASE_URL && !APP.SUPABASE_URL.includes('YOUR-'))
+  ? window.supabase.createClient(APP.SUPABASE_URL, APP.SUPABASE_ANON_KEY, { auth:{ storageKey:'exp-admin-auth' } }) : null;
+const STEP = {login:'登入',intro:'說明頁',product:'商品頁',tryon:'AI 試衣',shipping:'配送中',arrival:'到貨',form_post:'問卷①',return_steps:'退貨流程',form_effort:'問卷②',decision:'退貨決策',form_final:'問卷③',done:'完成'};
+let ROWS = [];
+
+function showLogin(msg){ $('#loading').hidden=true; $('#dash').hidden=true; $('#loginCard').hidden=false; $('#who').textContent=''; $('#lerr').textContent=msg||''; }
+
+function retry(msg){
+  $('#loading').hidden=false; $('#loading').innerHTML = esc(msg) + ' <button class="btn ghost sm" id="retry">重試</button>';
+  $('#retry').onclick = () => { $('#loading').textContent='載入中…'; enter(); };
+}
+async function enter(){
+  if(!sb){ showLogin('尚未設定 config.js（Supabase 網址與金鑰）。'); $('#lbtn').disabled=true; return; }
+  let session = null;
+  try{ ({ data:{ session } } = await sb.auth.getSession()); }catch(e){ return retry('讀取登入狀態失敗，登入狀態已保留。'); }
+  if(!session || session.user.is_anonymous){ showLogin(); return; }
+  const { data:p, error:pe } = await sb.from('profiles').select('role').eq('user_id', session.user.id).maybeSingle();
+  if(pe){ return retry('連線失敗（不會被登出）。'); }   // 暫時性錯誤不登出，避免重新整理時跳回登入頁
+  if(!p || p.role !== 'researcher'){ await sb.auth.signOut(); showLogin('此帳號沒有研究者權限。'); return; }
+  $('#loading').hidden=true; $('#loginCard').hidden=true; $('#dash').hidden=false; $('#who').textContent = session.user.email + '（研究者）';
+  load();
+}
+
+$('#lbtn').onclick = async () => {
+  if(!sb) return;
+  $('#lerr').textContent=''; $('#lbtn').disabled=true;
+  const { error } = await sb.auth.signInWithPassword({ email:$('#em').value.trim(), password:$('#pw').value });
+  $('#lbtn').disabled=false;
+  if(error){ $('#lerr').textContent='Email 或密碼錯誤。'; return; }
+  $('#pw').value=''; enter();
+};
+$('#pw').onkeydown = e => { if(e.key==='Enter') $('#lbtn').click(); };
+$('#logout').onclick = async () => { await sb.auth.signOut(); showLogin(); };
+$('#refresh').onclick = load;
+
+async function fetchAll(){
+  let all=[], from=0;
+  for(;;){
+    const { data, error } = await sb.from('participants')
+      .select('pid,grp,gap,nudge,step,dwell_arrival,dwell_decision,created_at,claimed_at,completed_at')
+      .order('pid').range(from, from+999);
+    if(error) throw error;
+    all = all.concat(data);
+    if(data.length < 1000) break;
+    from += 1000;
+  }
+  return all;
+}
+const status = r => r.completed_at ? '已完成' : (r.claimed_at ? '進行中' : '未使用');
+const fmt = t => t ? new Date(t).toLocaleString('zh-TW',{hour12:false}) : '';
+
+async function load(){
+  try{ ROWS = await fetchAll(); }catch(e){ alert('讀取失敗：' + e.message); return; }
+  const used = ROWS.filter(r=>r.claimed_at), done = ROWS.filter(r=>r.completed_at);
+  const g = k => `${used.filter(r=>r.grp===k).length} 登入／${done.filter(r=>r.grp===k).length} 完成`;
+  const stat = (t,v) => `<div class="stat">${t}<b>${v}</b></div>`;
+  $('#stats').innerHTML = stat('ID 總數',ROWS.length) + stat('未使用',ROWS.length-used.length) + stat('進行中',used.length-done.length) + stat('已完成',done.length)
+    + ['A','B','C','D'].map(k=>stat('組別 '+k, `<span style="font-size:15px;font-weight:500">${g(k)}</span>`)).join('');
+  $('#rows').innerHTML = ROWS.map(r => {
+    const s = status(r), cls = s==='已完成'?'done':(s==='進行中'?'run':'');
+    return `<tr><td>${esc(r.pid)}</td><td>${esc(r.grp||'')}</td><td><span class="tag ${cls}">${s}</span></td>
+      <td>${esc(STEP[r.step]||r.step)}</td><td>${esc(r.dwell_arrival)}</td><td>${esc(r.dwell_decision)}</td>
+      <td>${fmt(r.claimed_at)}</td><td>${fmt(r.completed_at)}</td>
+      <td>${s==='未使用'?`<button class="btn danger sm" data-del="${esc(r.pid)}">刪除</button>`:''}</td></tr>`;
+  }).join('') || '<tr><td colspan="9" style="color:var(--muted)">還沒有任何 ID，請先在上方產生。</td></tr>';
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if(!confirm('確定刪除 ID ' + b.dataset.del + '？')) return;
+    const { error } = await sb.from('participants').delete().eq('pid', b.dataset.del);
+    if(error) alert('刪除失敗：' + error.message); else load();
+  });
+}
+
+$('#gen').onclick = async () => {
+  $('#gerr').textContent=''; $('#gen').disabled=true;
+  const { data, error } = await sb.rpc('create_ids', { n:parseInt($('#n').value,10)||0, prefix:$('#pre').value || 'P' });
+  $('#gen').disabled=false;
+  if(error){ $('#gerr').textContent = '產生失敗：' + error.message; return; }
+  $('#genOut').hidden=false; $('#genTxt').value = data.join('\n'); load();
+};
+$('#copy').onclick = async () => { try{ await navigator.clipboard.writeText($('#genTxt').value); $('#copy').textContent='已複製'; }catch(e){ $('#genTxt').select(); } };
+
+$('#csv').onclick = () => {
+  const head = ['pid','group','gap','nudge','status','step','dwell_arrival_sec','dwell_decision_sec','claimed_at','completed_at'];
+  const q = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  const lines = [head.join(',')].concat(ROWS.map(r => [r.pid,r.grp,r.gap,r.nudge,status(r),r.step,r.dwell_arrival,r.dwell_decision,r.claimed_at,r.completed_at].map(q).join(',')));
+  const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'participants_' + new Date().toISOString().slice(0,10) + '.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+
+enter();
+</script>
+</body>
+</html>
+
