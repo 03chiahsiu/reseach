@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>線上服飾購物情境研究</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fog:#E8EDEF; --paper:#FFFFFF; --ink:#16252D; --muted:#5B6B73; --line:#D3DCE0;
+  --teal:#1E5B66; --teal-d:#154650; --price:#B23B2A; --leaf:#2F7D4E; --leaf-bg:#EAF4EC; --note:#EEF3F5;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--fog);color:var(--ink);line-height:1.7;font-size:16px}
+.bar{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.bar-in{max-width:960px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-weight:700;letter-spacing:.18em;font-size:17px}
+.brand small{font-weight:400;letter-spacing:.04em;color:var(--muted);margin-left:8px;font-size:12px}
+.prog{font-size:12px;color:var(--muted);white-space:nowrap}
+.prog-track{height:3px;background:var(--line)}
+.prog-fill{height:100%;background:var(--teal);width:0;transition:width .4s}
+main{max-width:960px;margin:0 auto;padding:24px 20px 96px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:28px}
+h1{font-size:26px;line-height:1.35;margin:0 0 12px}
+h2{font-size:21px;margin:0 0 10px}
+h3{font-size:16px;margin:22px 0 6px}
+p{margin:0 0 12px}
+.lead{color:var(--muted)}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}
+.cols.narrow-left{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}
+@media (max-width:720px){.cols,.cols.narrow-left{grid-template-columns:1fr;gap:18px}.panel{padding:20px}}
+.pic{width:100%;display:block;border-radius:4px;background:#EDF2F4;border:1px solid var(--line)}
+.pic-cap{font-size:13px;color:var(--muted);margin-top:6px}
+.price{font-size:28px;font-weight:700;color:var(--price)}
+.price small{font-size:14px;font-weight:500;margin-right:2px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}
+.chip{border:1px solid var(--line);border-radius:4px;padding:3px 12px;font-size:14px;background:#fff}
+.chip.on{border-color:var(--teal);color:var(--teal);font-weight:500}
+.kv{border-top:1px solid var(--line);margin-top:14px}
+.kv div{display:flex;gap:16px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv dt,.kv .k{flex:0 0 5.5em;color:var(--muted)}
+.btn{appearance:none;border:0;background:var(--teal);color:#fff;font:inherit;font-weight:500;padding:12px 28px;border-radius:4px;cursor:pointer;min-height:46px}
+.btn:hover:not(:disabled){background:var(--teal-d)}
+.btn:disabled{background:#A9B8BD;cursor:not-allowed}
+.btn:focus-visible,.link:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7FB4C0;outline-offset:2px}
+.link{background:none;border:0;color:var(--teal);text-decoration:underline;cursor:pointer;font:inherit;font-size:14px;padding:6px 0}
+.actions{margin-top:22px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.badge{display:inline-block;font-size:12px;background:var(--teal);color:#fff;border-radius:3px;padding:1px 8px;margin-bottom:8px}
+.callout{background:var(--note);border-left:4px solid var(--teal);padding:14px 16px;border-radius:0 4px 4px 0;margin:16px 0}
+.callout p{margin:0}
+.notice{display:flex;gap:12px;align-items:flex-start}
+.notice svg{flex:0 0 22px;margin-top:3px}
+.notice.green{background:var(--leaf-bg);border-left-color:var(--leaf)}
+.steps{list-style:none;margin:16px 0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.steps li::before{content:counter(s);flex:0 0 28px;height:28px;border-radius:50%;background:var(--note);color:var(--teal);font-weight:700;text-align:center;line-height:28px;font-size:14px}
+.steps b{display:block;font-weight:500}
+.steps span{color:var(--muted);font-size:14px}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.facts div{background:var(--note);padding:12px 14px;border-radius:4px;font-size:14px;color:var(--muted)}
+.facts b{display:block;color:var(--ink);font-size:17px}
+@media (max-width:560px){.facts{grid-template-columns:1fr}}
+.track{list-style:none;padding:0;margin:20px 0}
+.track li{display:flex;align-items:center;gap:12px;padding:10px 0;color:#9AA9B0;transition:color .3s}
+.track li i{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;flex:0 0 14px;transition:all .3s}
+.track li.on{color:var(--ink)}
+.track li.on i{background:var(--teal);border-color:var(--teal)}
+.formwrap{margin-top:14px;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff}
+.formwrap iframe{display:block;width:100%;height:max(72vh,640px);border:0}
+.ph{padding:40px 20px;text-align:center;color:var(--muted);border:2px dashed var(--line);margin:14px 0;border-radius:4px;font-size:14px}
+.order{display:flex;gap:16px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:12px;margin:14px 0}
+.order img{width:84px;height:84px;object-fit:cover;border-radius:3px;background:#EDF2F4}
+.order b{font-weight:500}
+.order small{color:var(--muted);display:block}
+label.chk{display:flex;gap:10px;align-items:flex-start;margin:16px 0 0;cursor:pointer}
+label.chk input{width:20px;height:20px;margin-top:4px;flex:0 0 20px}
+#admin{position:fixed;left:0;right:0;bottom:0;background:#16252D;color:#DCE6EA;font-size:13px;padding:8px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;z-index:20}
+#admin select,#admin button{font:inherit;font-size:13px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand" id="brand"></div>
+    <div class="prog" id="progText"></div>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+</header>
+<main id="app"></main>
+<div id="admin" hidden></div>
+<noscript><main><div class="panel">本研究平台需要啟用 JavaScript 才能執行。</div></main></noscript>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="demo-backend.js"></script>
+<script>
+/* ============================================================
+   ★★★ 研究者設定區（只需要改這一段）★★★
+   ============================================================ */
+const CONFIG = {
+
+  /* ---- 三份 Google 表單 ----
+     url     : 表單「傳送 > 連結」取得的網址（結尾是 /viewform，不需手動加參數）
+     entries : 預填欄位的 entry 編號（見 README 步驟 2）。沒有的欄位留空字串 "" 即可
+     minLoads: 表單頁面載入次數達到此數才開放「繼續」。
+               單頁表單 = 2（開啟 1 次 + 送出後 1 次）；
+               若表單有 N 個分頁，請設為 N + 1                                   */
+  forms: {
+    post:   { // 問卷①：購後失調量表（含虛實落差操弄檢核）
+      url: "", minLoads: 2,
+      entries: { pid: "", group: "", dwellArrival: "" }
+    },
+    effort: { // 問卷②：知覺退貨努力量表
+      url: "", minLoads: 2,
+      entries: { pid: "", group: "" }
+    },
+    final:  { // 問卷③：NAM 量表 + 退貨意圖 + 輕推操弄檢核 + 基本資料
+      url: "", minLoads: 2,
+      entries: { pid: "", group: "", dwellDecision: "" }
+    }
+  },
+
+  /* ---- 實驗刺激圖片（留空 = 使用內建佔位示意圖）----
+     建議三張圖的尺寸、背景、模特兒、光線一致，只改變合身度/衣長/比例      */
+  images: {
+    product:    "",  // 商品圖（例："img/product.jpg"）
+    aiTryOn:    "",  // AI 試穿預覽圖
+    actualLow:  "",  // 實際穿著圖：虛實落差「低」（與 AI 試穿一致）
+    actualHigh: ""   // 實際穿著圖：虛實落差「高」（與 AI 試穿明顯不同）
+  },
+
+  /* ---- 情境文字（所有組別相同）---- */
+  scenario: {
+    productName: "圓領針織衫",
+    color: "霧灰藍",
+    size: "M",
+    price: 1280,
+    delivery: "下單後 2–3 個工作天送達",
+    returnPolicy: "收貨後 7 日內可申請退貨（未穿著、吊牌完整）",
+    refundDays: "約 7 個工作天",
+    materials: "棉 60%・聚酯纖維 40%（示意）"
+  },
+
+  /* ---- 操弄文字（取自論文第三章第五節）---- */
+  text: {
+    gapLow:  "收到商品並實際試穿後，您發現這件服飾的整體版型、寬鬆程度、衣長及穿著比例，與先前 AI 虛擬試穿所呈現的效果大致一致。",
+    gapHigh: "收到商品並實際試穿後，您發現這件服飾的整體版型、寬鬆程度、衣長及穿著比例，與先前 AI 虛擬試穿所呈現的效果存在明顯差異。",
+    nudgeGreen:   "退貨可能增加額外的運輸、包裝與商品處理所需資源，並可能增加環境負擔。送出退貨申請前，請再次確認是否需要退貨。",
+    nudgeControl: "請於退貨期限內提出申請，並依平台流程完成商品寄回與後續退款程序。送出退貨申請前，請再次確認退貨資訊是否正確。"
+  },
+
+  /* ---- 其他 ---- */
+  arrivalMinSeconds: 8,     // 到貨頁最短停留秒數（確保看過實際穿著圖）
+  decisionMinSeconds: 8,    // 退貨決策頁最短停留秒數（確保看過提示）
+  showAiRefOnArrival: false,// 到貨頁是否並排顯示先前的 AI 試穿圖（論文未要求，預設不顯示）
+  nudgeStyle: "identical",  // "identical" = 兩組提示框外觀完全相同（只差文字，內部效度較佳）
+                            // "green"     = 輕推組提示框為綠色＋葉片圖示
+  completionNote: "您的作答已完成，請關閉此頁面。"   // 完成頁文字（可放補償領取說明）
+};
+
+/* ============================================================
+   以下為平台程式，一般不需要修改
+   ============================================================ */
+if(window.APP_CONFIG && APP_CONFIG.DEMO_MODE && APP_CONFIG.DEMO_FAST){ CONFIG.arrivalMinSeconds=3; CONFIG.decisionMinSeconds=3; }
+const SCREENS = ['login','intro','product','tryon','shipping','arrival','form_post','return_steps','form_effort','decision','form_final','done'];
+const GROUP = {'low|none':'A','low|green':'B','high|none':'C','high|green':'D'};
+const GROUP_REV = {A:['low','none'],B:['low','green'],C:['high','none'],D:['high','green']};
+const GROUP_LABEL = {A:'低落差／無輕推',B:'低落差／有輕推',C:'高落差／無輕推',D:'高落差／有輕推'};
+
+const qs = new URLSearchParams(location.search);
+const ADMIN = qs.get('admin') === '1';
+const KEY = 'exp_platform_v1';
+const BRAND_ZH = (window.APP_CONFIG||{}).BRAND_ZH || '衣語', BRAND_EN = (window.APP_CONFIG||{}).BRAND_EN || '';
+document.getElementById('brand').innerHTML = BRAND_ZH + (BRAND_EN ? '<small>' + BRAND_EN + '</small>' : '');
+document.title = '線上服飾購物情境研究';
+const $ = s => document.querySelector(s);
+let timers = [];
+
+/* ---------- 狀態與隨機分派 ---------- */
+function coin(){ const a=new Uint32Array(1); (window.crypto||{getRandomValues:x=>{x[0]=Math.random()*4294967296}}).getRandomValues(a); return a[0]%2===0; }
+function newPid(){ return 'P' + Math.random().toString(36).slice(2,8).toUpperCase(); }
+function loadState(){ try{ const s=JSON.parse(sessionStorage.getItem(KEY)); if(s&&s.pid) return s; }catch(e){} return null; }
+function saveState(){ try{ sessionStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function initState(){
+  let gap = qs.get('gap'), nudge = qs.get('nudge');
+  const g = (qs.get('group')||'').toUpperCase();
+  if(GROUP_REV[g]){ gap=GROUP_REV[g][0]; nudge=GROUP_REV[g][1]; }
+  if(gap!=='low'&&gap!=='high') gap = coin()?'low':'high';
+  if(nudge!=='green'&&nudge!=='none') nudge = coin()?'green':'none';
+  return { pid: qs.get('pid')||newPid(), gap, nudge, step:'intro', enter:{}, dwell:{}, start:Date.now() };
+}
+let S = null;   // 登入後由伺服器資料填入（預覽模式 ?admin=1 則用本機隨機）
+const APP = window.APP_CONFIG || {};
+const sb = (window.supabase && APP.SUPABASE_URL && !APP.SUPABASE_URL.includes('YOUR-'))
+  ? window.supabase.createClient(APP.SUPABASE_URL, APP.SUPABASE_ANON_KEY, { auth:{ storageKey:'exp-participant-auth' } }) : null;
+function hydrate(row){
+  const step = row.completed_at ? 'done' : ((row.step && row.step!=='login') ? row.step : 'intro');
+  S = { pid:row.pid, gap:row.gap, nudge:row.nudge, step, enter:{[step]:Date.now()},
+        dwell:{arrival:row.dwell_arrival, decision:row.dwell_decision}, start:Date.now() };
+  saveState();
+}
+const groupCode = () => GROUP[S.gap+'|'+S.nudge];
+
+/* ---------- 內建佔位圖（SVG）---------- */
+const FIT = { ai:{hw:76,len:200,sl:180}, low:{hw:76,len:200,sl:180}, high:{hw:108,len:272,sl:236} };
+function figure(f, body=true){
+  const {hw,len,sl}=f, hem=150+len, sh=hw*.88, col='#8FA9B4', dark='#6F8B97', skin='#D9B9A0';
+  const sleeve = d => { const sx=200+d*sh, ox=sx+d*10, bx=ox+d*(sl*.22), by=152+sl;
+    return `<path d="M${sx-d*4},150 L${ox+d*14},156 L${bx+d*14},${by} L${bx-d*20},${by+4} Z" fill="${col}"/><path d="M${sx-d*4},150 L${ox+d*14},156 L${bx+d*14},${by} L${bx-d*20},${by+4} Z" fill="url(#k)"/>`
+      + (body?`<ellipse cx="${bx-d*3}" cy="${by+16}" rx="11" ry="14" fill="${skin}"/>`:''); };
+  const head = body ? `<ellipse cx="200" cy="84" rx="36" ry="38" fill="#3A2F2B"/><circle cx="200" cy="92" r="30" fill="${skin}"/><rect x="188" y="116" width="24" height="38" fill="${skin}"/>` : '';
+  const legs = body ? `<rect x="136" y="290" width="60" height="212" rx="6" fill="#3B4852"/><rect x="204" y="290" width="60" height="212" rx="6" fill="#3B4852"/><ellipse cx="166" cy="506" rx="34" ry="8" fill="#22303A"/><ellipse cx="234" cy="506" rx="34" ry="8" fill="#22303A"/>` : '';
+  const yoff = body ? 0 : 0;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520"><defs><pattern id="k" width="5" height="5" patternUnits="userSpaceOnUse"><rect width="2" height="5" fill="rgba(255,255,255,.2)"/></pattern></defs>
+  <rect width="400" height="520" fill="#EDF2F4"/>${body?'':''}
+  <g transform="translate(0,${yoff})">${legs}${head}
+  ${sleeve(-1)}${sleeve(1)}
+  <path d="M${200-sh},150 Q200,136 ${200+sh},150 L${200+hw},${hem} L${200-hw},${hem} Z" fill="${col}"/>
+  <path d="M${200-sh},150 Q200,136 ${200+sh},150 L${200+hw},${hem} L${200-hw},${hem} Z" fill="url(#k)"/>
+  <rect x="${200-hw}" y="${hem-14}" width="${hw*2}" height="14" fill="${dark}"/>
+  <ellipse cx="200" cy="148" rx="30" ry="12" fill="${dark}"/>${body?`<ellipse cx="200" cy="146" rx="21" ry="7" fill="${skin}"/>`:`<ellipse cx="200" cy="146" rx="21" ry="7" fill="#EDF2F4"/>`}</g>
+  <text x="12" y="508" font-size="11" fill="#7A8A92" font-family="sans-serif">佔位示意圖（請在 CONFIG.images 換成正式刺激圖）</text></svg>`;
+}
+const uri = svg => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+const IMG = {
+  product:    () => CONFIG.images.product    || uri(figure(FIT.ai,false)),
+  aiTryOn:    () => CONFIG.images.aiTryOn    || uri(figure(FIT.ai)),
+  actualLow:  () => CONFIG.images.actualLow  || uri(figure(FIT.low)),
+  actualHigh: () => CONFIG.images.actualHigh || uri(figure(FIT.high))
+};
+const sc = CONFIG.scenario;
+const money = n => 'NT$ ' + n.toLocaleString('en-US');
+
+/* ---------- Google 表單網址（預填受試者編號與組別）---------- */
+function formSrc(key){
+  const f = CONFIG.forms[key]; if(!f || !f.url) return null;
+  const u = new URL(f.url);
+  u.searchParams.set('usp','pp_url'); u.searchParams.set('embedded','true');
+  const vals = { pid:S.pid, group:groupCode(), dwellArrival:S.dwell.arrival, dwellDecision:S.dwell.decision };
+  for(const [k,id] of Object.entries(f.entries||{})){
+    if(id && vals[k]!==undefined && vals[k]!==null) u.searchParams.set(id, String(vals[k]));
+  }
+  return u.toString();
+}
+
+/* ---------- 導覽 ---------- */
+function go(step){
+  const now = Date.now();
+  if(S.enter[S.step]){ const sec = Math.round((now - S.enter[S.step])/1000);
+    if(S.step==='arrival') S.dwell.arrival = sec;
+    if(S.step==='decision') S.dwell.decision = sec; }
+  S.step = step; S.enter[step] = now; saveState(); render(); window.scrollTo(0,0);
+  if(!ADMIN && sb){
+    sb.rpc('update_progress',{ p_step:step, p_dwell_arrival:S.dwell.arrival ?? null, p_dwell_decision:S.dwell.decision ?? null })
+      .then(r=>{ if(r.error) console.warn('進度儲存失敗', r.error.message); });
+  }
+}
+const nextOf = () => SCREENS[SCREENS.indexOf(S.step)+1];
+function lock(btn, sec, text){
+  if(ADMIN || sec<=0){ btn.disabled=false; btn.textContent=text; return; }
+  let n=sec; btn.disabled=true; btn.textContent=`${text}（${n}）`;
+  const id=setInterval(()=>{ n--; if(n<=0){ clearInterval(id); btn.disabled=false; btn.textContent=text; } else btn.textContent=`${text}（${n}）`; },1000);
+  timers.push(id);
+}
+
+/* ---------- 各頁面 ---------- */
+function formView(key, title, lead){
+  return {
+    html: () => `<section class="panel"><h2>${title}</h2><p class="lead">${lead}</p>
+      <div class="formwrap" id="fw"></div>
+      <div class="actions"><button class="btn" id="next" disabled>我已送出問卷，繼續</button>
+      <button class="link" id="manual" hidden>已送出但按鈕沒有反應？點此繼續</button></div></section>`,
+    mount(){
+      const src = formSrc(key), next=$('#next');
+      next.onclick = () => go(nextOf());
+      if(!src){ $('#fw').innerHTML = `<div class="ph">【尚未設定 Google 表單網址】<br>請在 CONFIG.forms.${key}.url 貼上表單連結。<br>目前可直接按「繼續」預覽流程。</div>`; next.disabled=false; return; }
+      const need = CONFIG.forms[key].minLoads || 2; let loads = 0;
+      const fr = document.createElement('iframe');
+      fr.title = title; fr.src = src; fr.setAttribute('loading','eager');
+      fr.addEventListener('load', () => { loads++; if(loads>=need) next.disabled=false; });
+      $('#fw').appendChild(fr);
+      if(ADMIN) next.disabled=false;
+      timers.push(setTimeout(()=>{ const m=$('#manual'); if(m){ m.hidden=false; m.onclick=()=>go(nextOf()); } }, 45000));
+    }
+  };
+}
+
+const VIEWS = {
+  login: {
+    html: () => `<section class="panel" style="max-width:520px;margin:40px auto"><h1>線上服飾購物情境研究</h1>
+      <p class="lead">請輸入研究者提供給您的參與者 ID 後登入。</p>
+      <label for="pid" style="display:block;font-weight:500;margin-top:14px">參與者 ID</label>
+      <input id="pid" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例：P0001-3FA9"
+        style="width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:4px;margin-top:6px;letter-spacing:.08em">
+      <p id="err" role="alert" style="color:var(--price);min-height:1.6em;margin:8px 0 0"></p>
+      <div class="actions"><button class="btn" id="login">登入</button></div></section>`,
+    mount(){
+      const inp=$('#pid'), btn=$('#login'), err=$('#err');
+      if(!sb){ err.textContent='平台尚未連接資料庫，請研究者先完成 config.js 設定。'; btn.disabled=true; return; }
+      const submit = async () => {
+        const v = inp.value.trim();
+        if(!v){ err.textContent='請輸入 ID。'; return; }
+        btn.disabled=true; err.textContent='';
+        try{
+          let { data:{ session } } = await sb.auth.getSession();
+          if(session && !session.user.is_anonymous){ await sb.auth.signOut(); session=null; }  // 研究者帳號不可當填答者
+          if(!session){ const r = await sb.auth.signInAnonymously(); if(r.error) throw r.error; }
+          const { data, error } = await sb.rpc('claim_participant', { p_pid:v });
+          if(error) throw error;
+          hydrate(data); render();
+        }catch(e){
+          const m=(e&&e.message)||'';
+          err.textContent = m.includes('invalid_id') ? '找不到這個 ID，請確認後再輸入。'
+            : m.includes('already_completed') ? '這個 ID 已經完成作答，無法再次登入。'
+            : '登入失敗，請稍後再試。';
+          btn.disabled=false;
+        }
+      };
+      btn.onclick=submit; inp.onkeydown=e=>{ if(e.key==='Enter') submit(); };
+      inp.focus();
+    }
+  },
+
+  intro: {
+    html: () => `<section class="panel"><h1>線上服飾購物情境研究</h1>
+      <p class="lead">預計填答時間約 10–15 分鐘</p>
+      <p>您好，感謝您參與本研究。本研究想了解消費者在線上服飾購物情境中的想法與感受。接下來您會瀏覽一個<b>虛構</b>的服飾購物平台，依指示完成購物流程，並在過程中填寫三份簡短問卷。</p>
+      <h3>注意事項</h3>
+      <p>• 平台、品牌與商品皆為虛構，不會產生任何實際交易或費用。<br>
+         • 問卷題目沒有對或錯的答案，請依您的真實感受作答。<br>
+         • 請想像自己正在為自己選購服飾，並盡量以平常的方式瀏覽每一頁。<br>
+         • 請勿使用瀏覽器的上一頁。若不小心離開頁面，可用同一個 ID 重新登入，從中斷處繼續。<br>
+         • 資料僅供學術研究使用，以匿名方式統計分析，您可隨時退出而不受任何影響。</p>
+      <p class="lead">研究者聯絡方式：【請填入姓名、單位與 Email；並依貴校研究倫理審查要求修改本頁文字】</p>
+      <label class="chk"><input type="checkbox" id="agree"><span>我已閱讀以上說明，年滿 18 歲，並同意參與本研究。</span></label>
+      <div class="actions"><button class="btn" id="start" disabled>開始</button></div></section>`,
+    mount(){ const c=$('#agree'), b=$('#start'); c.onchange=()=>b.disabled=!c.checked; b.onclick=()=>go('product'); }
+  },
+
+  product: {
+    html: () => `<section class="panel"><div class="cols narrow-left">
+      <div><img class="pic" src="${IMG.product()}" alt="${sc.productName}商品圖"></div>
+      <div><p style="margin-bottom:2px;color:var(--muted)">${BRAND_ZH}${BRAND_EN ? " " + BRAND_EN : ""}</p>
+        <h1>${sc.productName}</h1>
+        <div class="price"><small>NT$</small>${sc.price.toLocaleString('en-US')}</div>
+        <p style="margin:12px 0 2px;color:var(--muted)">顏色</p><div class="chips"><span class="chip on">${sc.color}</span></div>
+        <p style="margin:8px 0 2px;color:var(--muted)">尺寸</p><div class="chips"><span class="chip on">${sc.size}</span></div>
+        <dl class="kv" style="margin-bottom:0">
+          <div><span class="k">材質</span><span>${sc.materials}</span></div>
+          <div><span class="k">版型</span><span>圓領、落肩剪裁，中性風格</span></div>
+          <div><span class="k">配送</span><span>${sc.delivery}</span></div>
+          <div><span class="k">退貨</span><span>${sc.returnPolicy}</span></div>
+        </dl>
+        <div class="actions"><button class="btn" id="go">AI 試衣預覽</button></div>
+      </div></div></section>`,
+    mount(){ $('#go').onclick=()=>go('tryon'); }
+  },
+
+  tryon: {
+    html: () => `<section class="panel"><div class="cols narrow-left">
+      <div><img class="pic" src="${IMG.aiTryOn()}" alt="AI 虛擬試穿預覽圖"><div class="pic-cap">AI 虛擬試穿預覽</div></div>
+      <div><span class="badge">AI 試衣間</span>
+        <h2>您的 AI 試穿預覽</h2>
+        <p>系統已依據您的影像與身形資訊，生成這件「${sc.productName}（${sc.color}／${sc.size}）」的穿著預覽。</p>
+        <div class="callout"><p>請想像這是系統依<b>您本人</b>的影像所生成的結果，並仔細觀察整體版型、寬鬆程度、衣長與穿著比例。</p></div>
+        <p class="price"><small>NT$</small>${sc.price.toLocaleString('en-US')}</p>
+        <div class="actions"><button class="btn" id="buy">下單購買</button></div>
+      </div></div></section>`,
+    mount(){ $('#buy').onclick=()=>go('shipping'); }
+  },
+
+  shipping: {
+    html: () => `<section class="panel"><h2>訂單已成立</h2>
+      <p class="lead">已為您模擬商品配送流程，請稍候。</p>
+      <ul class="track" id="trk"><li><i></i>訂單成立</li><li><i></i>商品出貨</li><li><i></i>配送中</li><li><i></i>商品已送達</li></ul></section>`,
+    mount(){
+      const items=[...document.querySelectorAll('#trk li')]; let i=0;
+      const id=setInterval(()=>{ if(i<items.length){ items[i].classList.add('on'); i++; } else { clearInterval(id); go('arrival'); } }, ADMIN?250:1100);
+      timers.push(id);
+    }
+  },
+
+  arrival: {
+    html: () => {
+      const low = S.gap==='low';
+      const ref = CONFIG.showAiRefOnArrival
+        ? `<div><img class="pic" src="${IMG.aiTryOn()}" alt="先前的 AI 試穿預覽"><div class="pic-cap">先前的 AI 試穿預覽</div></div>` : '';
+      return `<section class="panel"><span class="badge">商品已送達</span><h2>您收到商品了</h2>
+        <p>請想像您已收到「${sc.productName}（${sc.color}／${sc.size}）」並實際穿上。下方為您<b>實際穿著</b>的樣子。</p>
+        <div class="${ref?'cols':''}" style="${ref?'':'max-width:380px'}">${ref}
+          <div><img class="pic" src="${low?IMG.actualLow():IMG.actualHigh()}" alt="實際穿著畫面"><div class="pic-cap">實際穿著</div></div></div>
+        <div class="callout"><p>${low?CONFIG.text.gapLow:CONFIG.text.gapHigh}</p></div>
+        <div class="actions"><button class="btn" id="go" disabled>前往問卷</button></div></section>`;
+    },
+    mount(){ const b=$('#go'); b.onclick=()=>go('form_post'); lock(b, CONFIG.arrivalMinSeconds, '前往問卷'); }
+  },
+
+  form_post: formView('post','問卷①：收到商品後的感受','請想像您剛收到並試穿了這件商品，依照您此刻的感受回答下列問題。填寫完成並送出後，按下方「繼續」。'),
+
+  return_steps: {
+    html: () => `<section class="panel"><h2>退貨流程說明</h2>
+      <p class="lead">若您想退回這件商品，需依下列流程辦理。請仔細閱讀。</p>
+      <div class="facts"><div>退款金額<b>${money(sc.price)}</b></div><div>退款處理時間<b>${sc.refundDays}</b></div><div>退貨期限<b>收貨後 7 日內</b></div></div>
+      <ol class="steps">
+        <li><div><b>在「我的訂單」提出退貨申請</b><span>選擇退貨商品並填寫退貨資料。</span></div></li>
+        <li><div><b>將商品重新包裝</b><span>裝回原包裝，保留吊牌，並附上退貨單。</span></div></li>
+        <li><div><b>安排寄回</b><span>自行前往合作超商寄件，或預約宅配收件。</span></div></li>
+        <li><div><b>等待商品檢查</b><span>倉庫收到商品後進行檢查，約需 2 個工作天。</span></div></li>
+        <li><div><b>收到退款</b><span>退款將匯回原付款方式，${sc.refundDays}內完成。</span></div></li>
+      </ol>
+      <div class="actions"><button class="btn" id="go">我已了解，前往問卷</button></div></section>`,
+    mount(){ $('#go').onclick=()=>go('form_effort'); }
+  },
+
+  form_effort: formView('effort','問卷②：對退貨流程的看法','請依照您剛才閱讀的退貨流程，回答下列問題。填寫完成並送出後，按下方「繼續」。'),
+
+  decision: {
+    html: () => {
+      const g = S.nudge==='green';
+      const icon = (g && CONFIG.nudgeStyle==='green')
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="#2F7D4E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-9 5-14 14-14 0 9-5 14-14 14z"/><path d="M5 19c3-5 6-8 10-10"/></svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="#1E5B66" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>`;
+      const cls = 'callout notice' + ((g && CONFIG.nudgeStyle==='green') ? ' green':'');
+      return `<section class="panel"><h2>申請退貨</h2>
+        <p class="lead">請想像您現在正在考慮是否要退回這件商品。請先閱讀本頁內容，再前往最後一份問卷。</p>
+        <div class="order"><img src="${IMG.product()}" alt=""><div><b>${sc.productName}</b><small>${sc.color}／${sc.size}　已送達</small><small>退款金額 ${money(sc.price)}</small></div></div>
+        <div class="${cls}" role="note">${icon}<p>${g?CONFIG.text.nudgeGreen:CONFIG.text.nudgeControl}</p></div>
+        <div class="actions"><button class="btn" id="go" disabled>前往最後一份問卷</button></div></section>`;
+    },
+    mount(){ const b=$('#go'); b.onclick=()=>go('form_final'); lock(b, CONFIG.decisionMinSeconds, '前往最後一份問卷'); }
+  },
+
+  form_final: formView('final','問卷③：您的想法與基本資料','請依照您剛才閱讀的內容與您的想法，回答下列問題。填寫完成並送出後，按下方「繼續」。'),
+
+  done: {
+    html: () => `<section class="panel"><h1>感謝您的參與</h1>
+      <p>${CONFIG.completionNote}</p>
+      <div class="callout"><p>您的完成代碼：<b style="letter-spacing:.1em">${S.pid}</b></p></div>
+      <p class="lead">本研究所使用之平台、品牌與商品皆為虛構，僅供學術研究使用。</p>
+      <div class="actions"><button class="btn" id="backLogin">回到登入頁</button></div></section>`,
+    mount(){
+      $('#backLogin').onclick = async () => {
+        if(ADMIN){ location.href = location.pathname + '?admin=1&fresh=1'; return; }   // 預覽模式：重新開始
+        try{ sessionStorage.removeItem(KEY); }catch(e){}
+        if(sb){ try{ await sb.auth.signOut(); }catch(e){} }
+        S = null; render(); window.scrollTo(0,0);
+      };
+    }
+  }
+};
+
+/* ---------- 繪製 ---------- */
+function render(){
+  timers.forEach(t=>{clearInterval(t);clearTimeout(t)}); timers=[];
+  const step = S ? S.step : 'login';
+  const idx = SCREENS.indexOf(step), v = VIEWS[step] || VIEWS.login;
+  $('#app').innerHTML = v.html(); v.mount();
+  const pct = Math.round(idx/(SCREENS.length-1)*100);
+  $('#progFill').style.width = pct+'%';
+  $('#progText').textContent = step==='done' ? '已完成' : `進度 ${pct}%`;
+  renderAdmin();
+}
+function renderAdmin(){
+  const el=$('#admin'); if(!ADMIN){ el.hidden=true; return; }
+  el.hidden=false;
+  el.innerHTML = `<b>研究者模式</b><span>PID ${S.pid}</span><span>組別 ${groupCode()}（${GROUP_LABEL[groupCode()]}）</span>
+    <label>跳至 <select id="jump">${SCREENS.filter(s=>s!=='login').map(s=>`<option value="${s}" ${s===S.step?'selected':''}>${s}</option>`).join('')}</select></label>
+    <button id="reset">重新開始（重新隨機）</button>`;
+  $('#jump').onchange=e=>go(e.target.value);
+  $('#reset').onclick=()=>{ try{sessionStorage.removeItem(KEY)}catch(e){} location.href = location.pathname + '?admin=1&fresh=1'; };
+}
+
+async function boot(){
+  if(ADMIN){   // 預覽模式：不連資料庫、不寫入任何資料
+    S = qs.get('fresh')==='1' ? initState() : (loadState() || initState());
+    if(!S.enter[S.step]) S.enter[S.step]=Date.now();
+    saveState(); render(); return;
+  }
+  if(sb){
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      if(session && session.user.is_anonymous){
+        const { data } = await sb.rpc('get_my_participant');
+        if(data){ hydrate(data); render(); return; }   // 未完成：回到原本進度；已完成：顯示完成頁
+      }
+    }catch(e){ console.warn(e); }
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>
+
