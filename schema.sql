@@ -31,6 +31,20 @@ create table if not exists public.participants (
 );
 create index if not exists participants_auth_uid_idx on public.participants(auth_uid);
 
+-- 受試者與研究者的操作歷程。只允許研究者讀取；寫入一律透過受控函式。
+create table if not exists public.activity_logs (
+  id              bigint generated always as identity primary key,
+  actor_uid       uuid references auth.users(id) on delete set null,
+  actor_role      text not null check (actor_role in ('researcher','participant')),
+  event_type      text not null,
+  participant_pid text,
+  details         jsonb not null default '{}'::jsonb
+                    check (jsonb_typeof(details) = 'object'),
+  created_at      timestamptz not null default now()
+);
+create index if not exists activity_logs_created_at_idx on public.activity_logs(created_at desc);
+create index if not exists activity_logs_participant_pid_idx on public.activity_logs(participant_pid);
+
 create sequence if not exists public.pid_seq start 1;
 
 -- ---------- 2. 角色判斷函式 ----------
@@ -43,6 +57,7 @@ $$;
 -- ---------- 3. 列級權限（RLS）----------
 alter table public.profiles     enable row level security;
 alter table public.participants enable row level security;
+alter table public.activity_logs enable row level security;
 
 drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles
@@ -57,6 +72,11 @@ create policy "participants_select" on public.participants
 drop policy if exists "participants_delete" on public.participants;
 create policy "participants_delete" on public.participants
   for delete using (public.is_researcher() and claimed_at is null);
+
+-- 活動紀錄包含完整研究歷程，只有研究者可以查看。
+drop policy if exists "activity_logs_select" on public.activity_logs;
+create policy "activity_logs_select" on public.activity_logs
+  for select using (public.is_researcher());
 
 -- 沒有 insert / update 的 policy：所有寫入都只能透過下面的函式，
 -- 填答者無法自行改組別、改 ID 或改別人的資料。
@@ -76,6 +96,10 @@ begin
     insert into public.participants(pid) values (v);
     return next v;
   end loop;
+
+  insert into public.activity_logs(actor_uid, actor_role, event_type, details)
+  values (auth.uid(), 'researcher', 'ids_created',
+          jsonb_build_object('count', n, 'prefix', pre));
 end $$;
 
 -- ---------- 5. 填答者：用 ID 登入並由伺服器做「平衡隨機分派」----------
@@ -85,6 +109,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   r public.participants;
   v_grp text;
+  v_is_first boolean;
 begin
   if auth.uid() is null then raise exception 'not_authenticated'; end if;
   if public.is_researcher() then raise exception 'researcher_cannot_participate'; end if;
@@ -95,6 +120,7 @@ begin
    where pid = upper(trim(p_pid)) for update;
   if not found then raise exception 'invalid_id'; end if;
   if r.completed_at is not null then raise exception 'already_completed'; end if;
+  v_is_first := r.grp is null;
 
   -- 同一個登入身分只綁定一個 ID
   update public.participants set auth_uid = null
@@ -120,6 +146,14 @@ begin
      where pid = r.pid returning * into r;
   end if;
 
+  insert into public.activity_logs(actor_uid, actor_role, event_type, participant_pid, details)
+  values (
+    auth.uid(), 'participant',
+    case when v_is_first then 'participant_claimed' else 'participant_resumed' end,
+    r.pid,
+    jsonb_build_object('group', r.grp, 'step', r.step)
+  );
+
   return to_jsonb(r) - 'auth_uid' - 'created_by';
 end $$;
 
@@ -136,28 +170,88 @@ $$;
 create or replace function public.update_progress(
   p_step text, p_dwell_arrival int default null, p_dwell_decision int default null)
 returns void language plpgsql security definer set search_path = public as $$
+declare
+  r public.participants;
+  v_previous_step text;
 begin
   if p_step not in ('intro','product','tryon','shipping','arrival','form_post',
                     'return_steps','form_effort','decision','form_final','done') then
     raise exception 'bad_step';
   end if;
+
+  select * into r from public.participants
+   where auth_uid = auth.uid() and completed_at is null
+   order by claimed_at desc nulls last limit 1 for update;
+  if not found then raise exception 'no_active_participant'; end if;
+  v_previous_step := r.step;
+
   update public.participants set
     step = p_step,
     dwell_arrival  = coalesce(p_dwell_arrival,  dwell_arrival),
     dwell_decision = coalesce(p_dwell_decision, dwell_decision),
     completed_at = case when p_step = 'done' then coalesce(completed_at, now()) else completed_at end
-   where auth_uid = auth.uid() and completed_at is null;
+   where pid = r.pid
+   returning * into r;
+
+  insert into public.activity_logs(actor_uid, actor_role, event_type, participant_pid, details)
+  values (
+    auth.uid(), 'participant',
+    case when p_step = 'done' then 'participant_completed' else 'step_changed' end,
+    r.pid,
+    jsonb_build_object(
+      'previous_step', v_previous_step,
+      'step', p_step,
+      'dwell_arrival', r.dwell_arrival,
+      'dwell_decision', r.dwell_decision
+    )
+  );
 end $$;
 
--- ---------- 8. 函式執行權限 ----------
+-- ---------- 8. 研究者活動與受控刪除 ----------
+create or replace function public.log_researcher_event(
+  p_event_type text, p_details jsonb default '{}'::jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_researcher() then raise exception 'forbidden'; end if;
+  if p_event_type not in ('researcher_login','researcher_logout','participants_csv_exported') then
+    raise exception 'bad_event_type';
+  end if;
+  if jsonb_typeof(coalesce(p_details, '{}'::jsonb)) <> 'object' then
+    raise exception 'bad_details';
+  end if;
+  insert into public.activity_logs(actor_uid, actor_role, event_type, details)
+  values (auth.uid(), 'researcher', p_event_type, coalesce(p_details, '{}'::jsonb));
+end $$;
+
+create or replace function public.delete_unclaimed_participant(p_pid text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_pid text := upper(trim(p_pid));
+begin
+  if not public.is_researcher() then raise exception 'forbidden'; end if;
+  delete from public.participants where pid = v_pid and claimed_at is null;
+  if not found then raise exception 'not_found_or_already_used'; end if;
+  insert into public.activity_logs(actor_uid, actor_role, event_type, participant_pid)
+  values (auth.uid(), 'researcher', 'id_deleted', v_pid);
+end $$;
+
+-- ---------- 9. 函式執行權限 ----------
+revoke all on table public.activity_logs from anon;
+revoke insert, update, delete on table public.activity_logs from authenticated;
+grant select on table public.activity_logs to authenticated;
+
 revoke all on function public.create_ids(int, text)            from public, anon;
 revoke all on function public.claim_participant(text)          from public, anon;
 revoke all on function public.get_my_participant()             from public, anon;
 revoke all on function public.update_progress(text, int, int)  from public, anon;
+revoke all on function public.log_researcher_event(text, jsonb) from public, anon;
+revoke all on function public.delete_unclaimed_participant(text) from public, anon;
 grant execute on function public.create_ids(int, text)           to authenticated;
 grant execute on function public.claim_participant(text)         to authenticated;
 grant execute on function public.get_my_participant()            to authenticated;
 grant execute on function public.update_progress(text, int, int) to authenticated;
+grant execute on function public.log_researcher_event(text, jsonb) to authenticated;
+grant execute on function public.delete_unclaimed_participant(text) to authenticated;
 grant execute on function public.is_researcher()                 to anon, authenticated;
 
 -- ============================================================
