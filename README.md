@@ -29,7 +29,7 @@
 | 檔案 | 用途 |
 |---|---|
 | `index.html` | 填答者頁面：ID 登入 → 實驗流程 → 嵌入 Google 表單 |
-| `admin.html` | 研究者後台：登入、產生 ID、查看進度、匯出 CSV |
+| `admin.html` | 研究者後台：登入、產生 ID、查看進度與活動紀錄、匯出 CSV |
 | `config.js` | 平台名稱、測試模式開關、Supabase 連線設定 |
 | `demo-backend.js` | 測試模式用的本機模擬資料庫（正式上線後不會被使用） |
 | `schema.sql` | 資料表、角色與權限（步驟一-2 貼到 Supabase 執行） |
@@ -37,7 +37,7 @@
 ## 一、Supabase 設定（約 10 分鐘）
 
 1. 到 https://supabase.com 註冊 → **New project**（記住資料庫密碼；區域選 Singapore 或 Tokyo）。
-2. 左側 **SQL Editor** → **New query** → 把 `schema.sql` 全部貼上 → **Run**。
+2. 左側 **SQL Editor** → **New query** → 把 `schema.sql` 全部貼上 → **Run**。日後更新版本時可再次完整執行。
 3. **Authentication → Sign In / Providers**，開啟 **Anonymous sign-ins**（填答者以匿名身分登入，靠 ID 辨識）。
 4. **Authentication → Users → Add user → Create new user**：輸入您的 Email 與密碼，勾選 **Auto Confirm User**。
 5. 回 SQL Editor 執行（Email 換成您剛建立的）：
@@ -72,7 +72,16 @@
 4. 後台可看每個 ID 的組別、進度、停留秒數，並匯出 CSV。
 5. 預覽平台：後台的「預覽平台」按鈕（或網址加 `?admin=1&group=A`），可切換任一頁與任一組，**不會寫入任何資料**。
 
-## 五、權限設計
+## 五、活動資料庫
+
+正式模式會持續更新並保存兩類資料：
+
+- **受試者狀態**：ID、實驗組別、目前進度、兩個指定頁面的停留秒數、首次登入與完成時間。
+- **完整活動紀錄**：受試者首次登入、續答、每次換頁與完成；研究者登入／登出、產生或刪除 ID、匯出 CSV。
+
+研究者登入後可在後台最下方查看最新 200 筆活動。活動紀錄只能由資料庫函式新增，只有研究者能讀取；受試者無法查看、修改或刪除紀錄。
+
+## 六、權限設計
 
 | | 研究者 | 填答者 |
 |---|---|---|
